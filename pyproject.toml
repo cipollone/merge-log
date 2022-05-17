@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "merge-logs"
+version = "0.1.0"
+description = "Merge log files into statistics"
+authors = ["Roberto Cipollone <cipollone.rt@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.22.3"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+mypy = "^0.950"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
