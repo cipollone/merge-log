@@ -1,19 +1,23 @@
 """Format parsers."""
 
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
 from merge_logs.types import (FileBaseFormat, FileFormat0, FileFormat1,
                               FileFormat2, FileFormat3, Stats, TimeStats)
 
-MergerType = Callable[[List[FileBaseFormat], Optional[Sequence[str]]], Stats]
+CsvHeader = Sequence[str]
+MergerType = Callable[
+    [List[FileBaseFormat], Optional[Sequence[str]]],
+    Tuple[Stats, Optional[CsvHeader]]
+]
 
 
 def merge_format0(
     data: List[FileFormat0],
     features: Optional[Sequence[str]] = None,
-) -> Stats:
+) -> Tuple[Stats, Optional[CsvHeader]]:
     """Merge all inputs according to format0; see program help."""
     # Check
     assert features is None, "Can't select features"
@@ -37,13 +41,13 @@ def merge_format0(
     for key in keys:
         stats[key] = [np.mean(combined[key]), np.std(combined[key])]
 
-    return stats
+    return stats, None
 
 
 def merge_format1(
     data: List[FileFormat1],
     features: Optional[Sequence[str]] = None,
-) -> TimeStats:
+) -> Tuple[TimeStats, Optional[CsvHeader]]:
     """Merge all inputs according to format1; see program help."""
     # Check
     assert features is None, "Can't select features"
@@ -68,13 +72,13 @@ def merge_format1(
     for key in all_keys[0]:
         stats[key] = [np.mean(combined[key]), np.std(combined[key])]
 
-    return stats
+    return stats, None
 
 
 def merge_format2(
     data: List[FileFormat2],
     features: Optional[Sequence[str]] = None,
-) -> TimeStats:
+) -> Tuple[TimeStats, Optional[CsvHeader]]:
     """Merge all inputs according to format2; see program help."""
     # Check
     assert features is None, "Can't select features"
@@ -114,13 +118,13 @@ def merge_format2(
                 [np.mean(combined[key][stat_i]), np.std(combined[key][stat_i])]
             )
 
-    return stats
+    return stats, None
 
 
 def merge_format3(
     data: List[FileFormat3],
     features: Sequence[str],
-) -> TimeStats:
+) -> Tuple[TimeStats, Optional[CsvHeader]]:
     """Merge all inputs according to format3; see program help."""
     # Get feature names
     features_names = [
@@ -154,7 +158,7 @@ def merge_format3(
             stats[i].append(np.mean(feat_step_stats))
             stats[i].append(np.std(feat_step_stats))
 
-    return stats
+    return stats, features_names
 
 
 def get_nested(data, nested_feature: str):

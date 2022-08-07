@@ -37,11 +37,13 @@ def merge_formats(
     merge_format = formats[format_id]
 
     # Do
-    stats = merge_format(data, features)
+    stats, csv_header = merge_format(data, features)
 
     # Write all
     with open(out_path, "w", newline="") as f:
         writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_NONNUMERIC)
+        if csv_header:
+            writer.writerow(csv_header)
         for stat in sorted(stats):
             writer.writerow([stat, *stats[stat]])
 
