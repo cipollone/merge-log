@@ -1,6 +1,6 @@
 """Format parsers."""
 
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -12,11 +12,11 @@ MergerType = Callable[[List[FileBaseFormat], Optional[Sequence[str]]], Stats]
 
 def merge_format0(
     data: List[FileFormat0],
-    nested_feature: Optional[Sequence[str]] = None,
+    features: Optional[Sequence[str]] = None,
 ) -> Stats:
     """Merge all inputs according to format0; see program help."""
     # Check
-    assert nested_feature is None, "Format0 can only merge top-level features."
+    assert features is None, "Can't select features"
 
     # Check keys
     keys = set(data[0].keys())
@@ -42,11 +42,11 @@ def merge_format0(
 
 def merge_format1(
     data: List[FileFormat1],
-    nested_feature: Optional[Sequence[str]] = None,
+    features: Optional[Sequence[str]] = None,
 ) -> TimeStats:
     """Merge all inputs according to format1; see program help."""
     # Check
-    assert nested_feature is None, "Format1 can only merge top-level features."
+    assert features is None, "Can't select features"
 
     # Check keys
     all_keys = [sorted(data_i.keys()) for data_i in data]
@@ -64,7 +64,7 @@ def merge_format1(
             combined[key].extend(file_data[other_key])
 
     # Collect statistics
-    stats: Stats = {}
+    stats: TimeStats = {}
     for key in all_keys[0]:
         stats[key] = [np.mean(combined[key]), np.std(combined[key])]
 
@@ -73,11 +73,11 @@ def merge_format1(
 
 def merge_format2(
     data: List[FileFormat2],
-    nested_feature: Optional[Sequence[str]] = None,
+    features: Optional[Sequence[str]] = None,
 ) -> TimeStats:
     """Merge all inputs according to format2; see program help."""
     # Check
-    assert nested_feature is None, "Format2 can only merge top-level features."
+    assert features is None, "Can't select features"
 
     # Check keys
     all_keys = [sorted(data_i.keys()) for data_i in data]
@@ -106,7 +106,7 @@ def merge_format2(
                     combined[key][stat_i].append(stat)
 
     # Collect statistics
-    stats: Stats = {}
+    stats: TimeStats = {}
     for key in all_keys[0]:
         stats[key] = []
         for stat_i in range(n_stats):
@@ -119,8 +119,54 @@ def merge_format2(
 
 def merge_format3(
     data: List[FileFormat3],
-    nested_feature: Optional[Sequence[str]] = None,
+    features: Sequence[str],
 ) -> TimeStats:
     """Merge all inputs according to format3; see program help."""
-    # TODO
-    pass
+    # Get feature names
+    features_names = [
+        nested_feat.split(",")[-1] for nested_feat in features
+    ]
+
+    # Check equal number of steps
+    n_steps = len(data[0])
+    assert all((len(file_stats) == n_steps for file_stats in data)), (
+        f"Not all files contain {n_steps} statistics"
+    )
+
+    # Collect all
+    all_stats: Dict[str, List[List[float]]] = {}
+    for name, feature in zip(features_names, features):
+        feat_stats = []
+        for step in range(n_steps):
+            feat_step_stats = [
+                get_nested(file_stats[step], feature)
+                for file_stats in data
+            ]
+            feat_stats.append(feat_step_stats)
+        all_stats[name] = feat_stats
+
+    # Compute statistics
+    stats: TimeStats = {}
+    for i in range(n_steps):
+        stats[i] = []
+        for name in features_names:
+            feat_step_stats = all_stats[name][i]
+            stats[i].append(np.mean(feat_step_stats))
+            stats[i].append(np.std(feat_step_stats))
+
+    return stats
+
+
+def get_nested(data, nested_feature: str):
+    """Return nested key.
+
+    :param nested_feature: a string where each nested key is separated by ,
+    """
+    return _get_nested(data, nested_feature=nested_feature.split(","))
+
+
+def _get_nested(data, nested_feature: Optional[Sequence[str]]):
+    """Return nested key."""
+    if nested_feature is None or len(nested_feature) == 0:
+        return data
+    return _get_nested(data[nested_feature[0]], nested_feature[1:])

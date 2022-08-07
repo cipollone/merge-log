@@ -12,7 +12,7 @@ from merge_logs.loaders import get_loaders
 
 def merge_formats(
     format_id: int,
-    nested: Optional[Sequence[str]],
+    features: Optional[Sequence[str]],
     loader: str,
     in_paths: Sequence[str],
     out_path: str,
@@ -37,7 +37,7 @@ def merge_formats(
     merge_format = formats[format_id]
 
     # Do
-    stats = merge_format(data, nested)
+    stats = merge_format(data, features)
 
     # Write all
     with open(out_path, "w", newline="") as f:
@@ -72,10 +72,11 @@ def main():
     )
     # TODO: doc format 3
     parser.add_argument(
-        "--nested",
+        "--features",
         type=str,
         nargs="+",
-        help="Sequence of nested keys to be traversed in input files, if any"
+        help="Features to collect from input files. "
+        "Features can be nested keys by separating them with comma."
     )
     parser.add_argument(
         "--loader",
@@ -109,7 +110,7 @@ def main():
     # Do
     merge_formats(
         args.format,
-        nested=args.nested,
+        features=args.features,
         loader=args.loader,
         in_paths=args.in_paths,
         out_path=args.out,
