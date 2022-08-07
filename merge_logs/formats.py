@@ -136,22 +136,30 @@ def merge_format3(
     assert all((len(file_stats) == n_steps for file_stats in data)), (
         f"Not all files contain {n_steps} statistics"
     )
+    real_n_steps = n_steps  # Some features may be missing at timesteps
 
     # Collect all
     all_stats: Dict[str, List[List[float]]] = {}
     for name, feature in zip(features_names, features):
         feat_stats = []
         for step in range(n_steps):
+
+            # Collect from files
             feat_step_stats = [
                 get_nested(file_stats[step], feature)
                 for file_stats in data
             ]
+            # Skip if not all found
+            if not all((val is not None for val in feat_step_stats)):
+                real_n_steps -= 1
+                continue
+
             feat_stats.append(feat_step_stats)
         all_stats[name] = feat_stats
 
     # Compute statistics
     stats: TimeStats = {}
-    for i in range(n_steps):
+    for i in range(real_n_steps):
         stats[i] = []
         for name in features_names:
             feat_step_stats = all_stats[name][i]
@@ -165,6 +173,7 @@ def get_nested(data, nested_feature: str):
     """Return nested key.
 
     :param nested_feature: a string where each nested key is separated by ,
+    :return: value behing the nested key or None if not found
     """
     return _get_nested(data, nested_feature=nested_feature.split(","))
 
@@ -173,4 +182,6 @@ def _get_nested(data, nested_feature: Optional[Sequence[str]]):
     """Return nested key."""
     if nested_feature is None or len(nested_feature) == 0:
         return data
+    if nested_feature[0] not in data:
+        return None
     return _get_nested(data[nested_feature[0]], nested_feature[1:])
