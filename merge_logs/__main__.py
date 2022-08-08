@@ -68,11 +68,13 @@ def main():
             "Format 1: like format 0 but keys are ints, "
             "and they don't need to match exactly; "
             "the closest entry will be selected."
-            "Format 2: similar to 0, but multiple stats are combined "
+            "Format 2: similar to 1, but multiple stats are combined "
             "at the same time in different columns.\n"
+            "Format 3: contains a sequence of dict nested structures. "
+            "Each dict in the sequence contains metrics for a timestep. "
+            "This combines the metrics that are specified with --features."
         ),
     )
-    # TODO: doc format 3
     parser.add_argument(
         "--features",
         type=str,
